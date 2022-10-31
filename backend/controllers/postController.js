@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 
 const Post = require('../models/Post.js');
+const User = require('../models/User.js');
 
 /**
  * @desc Get all posts
@@ -31,6 +32,7 @@ const setPost = asyncHandler(async (req, res) => {
   const post = await Post.create({
     title: req.body.title,
     content: req.body.content,
+    user: req.user.id,
   });
 
   res.status(200).json(post);
@@ -53,6 +55,13 @@ const updatePost = asyncHandler(async (req, res) => {
     new: true,
   });
 
+  const user = await User.findById(req.user.id);
+
+  if (post.user.toString() !== user.id) {
+    res.status(401);
+    throw new Error('You are not authorized to update this post');
+  }
+
   res.status(200).json(updatedPost);
 });
 
@@ -67,6 +76,13 @@ const deletePost = asyncHandler(async (req, res) => {
   if (!post) {
     res.status(400);
     throw new Error('Post not found');
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (post.user.toString() !== user.id) {
+    res.status(401);
+    throw new Error('You are not authorized to remove this post');
   }
 
   await post.remove();
